@@ -1,55 +1,71 @@
 (function() {
 
-var app = angular.module('starter', ['ionic']);
+var app = angular.module('myNotes', ['ionic','mynotes.notestore']);
 
 app.config(function($stateProvider, $urlRouterProvider){
-	
+
 	$stateProvider.state('list',{
 		url:'/list',
 		templateUrl: 'templates/list.html'
 	});
 	
+	$stateProvider.state('add',{
+		url:'/add',
+		templateUrl: 'templates/edit.html',
+		controller: 'AddCtrl'
+	});
+	
 	$stateProvider.state('edit',{
 		url:'/edit/:noteId',
-		templateUrl: 'templates/edit.html'
+		templateUrl: 'templates/edit.html',
+		controller: 'EditCtrl'
 	});
 	
 	$urlRouterProvider.otherwise('/list');
-
+	
 });
 
-var notes = [
-  {
-		id: '1',
-	  title: 'First Note',
-		description:'This is my first note.'
-	},
-	{
-		id: '2',
-		title: 'Second Note',
-		description:'This is my second note.'
-	}
-];
-		
-function getNote(noteId){
-	for(var i=0; i<notes.length; i++){
-		if(notes[i].id === noteId){
-			return notes[i];		
-		}
-	}
-	return undefined;
-}
-
-app.controller('ListCtrl', function($scope) {
+app.controller('ListCtrl', function($scope, NoteStore) {
 	
-	$scope.notes = notes;
+	$scope.reordering = false;
+	$scope.notes = NoteStore.list();
+	
+	$scope.remove = function(noteId) {
+		NoteStore.remove(noteId);
+	};
+	
+	$scope.move = function(note, fromIndex, toIndex) {
+		NoteStore.move(note, fromIndex, toIndex);
+	};
+	
+	$scope.toggleReordering = function() {
+		$scope.reordering = !$scope.reordering;
+	};
 		
 });
 
-app.controller('EditCtrl', function($scope, $state){
+app.controller('AddCtrl', function($scope, $state, NoteStore){
 
-	$scope.note = getNote($state.params.noteId);
+	$scope.note = {
+		id: new Date().getTime().toString(),
+		title:'',
+		description:''
+	};
 	
+	$scope.save = function(){
+		NoteStore.create($scope.note);
+		$state.go('list');
+	};
+});
+
+app.controller('EditCtrl', function($scope, $state, NoteStore){
+
+	$scope.note = angular.copy(NoteStore.get($state.params.noteId));
+	
+	$scope.save = function(){
+	   NoteStore.update($scope.note);
+	   $state.go('list');
+	};
 });
 
 app.run(function($ionicPlatform) {
